@@ -14,25 +14,6 @@ cd ~/system-optimizations/pop-os-docs && git pull --ff-only
 journalctl -b | grep -iE "(xid|error|fail)" | grep -ivE "firefox" | tail -20
 ```
 
-## Pending Verification (Next Session)
-
-**After reboot, verify RTX 5090 fixes are working:**
-
-```bash
-# 1. Check boot service applied clocks
-systemctl status nvidia-powerd-fix.service
-
-# 2. Verify persistence mode is enabled
-nvidia-smi -q | grep "Persistence Mode"
-
-# 3. Check for any Xid errors this boot
-journalctl -b | grep -i xid
-```
-
-If user tested Windows dual-boot, ask if Windows had any GPU issues on startup.
-
-**Remove this section once verified.**
-
 ## Purpose
 
 This repository contains system optimizations for Pop!_OS Linux. Scripts and configurations here modify system behavior for performance, power management, or user experience improvements.

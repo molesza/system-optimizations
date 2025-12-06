@@ -1,0 +1,17 @@
+#!/bin/bash
+# NVIDIA GPU Reset on Shutdown
+# Resets GPU clocks and disables persistence mode for clean handoff to other OSes
+#
+# Location: /lib/systemd/system-shutdown/nvidia-reset.shutdown
+# This script runs during the final shutdown phase
+
+# Only run if nvidia-smi is available
+if command -v nvidia-smi &>/dev/null; then
+    # Reset GPU clocks to default (removes -lgc lock)
+    nvidia-smi -rgc 2>/dev/null
+
+    # Disable persistence mode
+    nvidia-smi -pm 0 2>/dev/null
+fi
+
+exit 0

@@ -53,15 +53,32 @@ Keeps the GPU driver loaded and initialized, preventing state resets.
 Install the systemd service to apply fixes at boot:
 
 ```bash
-sudo cp systemd/nvidia-powerd-fix.service /etc/systemd/system/
+sudo cp nvidia-powerd-fix.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable nvidia-powerd-fix.service
 ```
 
-Or use the install script:
+### 4. Dual-Boot Compatibility (shutdown script)
+
+For dual-boot systems (e.g., with Windows), install the shutdown script to reset GPU state:
 
 ```bash
-./scripts/install-nvidia-fix.sh
+sudo cp scripts/nvidia-reset.shutdown /lib/systemd/system-shutdown/
+sudo chmod +x /lib/systemd/system-shutdown/nvidia-reset.shutdown
+```
+
+This script runs during shutdown and:
+- Resets GPU clocks to default (`nvidia-smi -rgc`)
+- Disables persistence mode (`nvidia-smi -pm 0`)
+
+This ensures Windows boots with a clean GPU state.
+
+### Quick Install
+
+Use the install script to set up everything:
+
+```bash
+./install-nvidia-fix.sh
 ```
 
 ## Verification
@@ -86,8 +103,9 @@ journalctl -f | grep -i xid
 
 | File | Purpose |
 |------|---------|
-| `systemd/nvidia-powerd-fix.service` | Systemd unit to apply fixes at boot |
-| `scripts/install-nvidia-fix.sh` | Installation script |
+| `nvidia-powerd-fix.service` | Systemd unit to apply fixes at boot |
+| `scripts/nvidia-reset.shutdown` | Shutdown script to reset GPU state for dual-boot |
+| `install-nvidia-fix.sh` | Installation script |
 
 ## References
 
@@ -103,6 +121,145 @@ journalctl -f | grep -i xid
 - Pop!_OS packages the correct driver via `nvidia-driver-580-open`
 - This is a known issue affecting some RTX 5090 cards; NVIDIA may fix this in future driver updates
 
+## Known Issue: PCIe Link Speed Degradation
+
+### Symptoms
+
+After boot, the GPU may operate at PCIe Gen1 (2.5 GT/s) instead of Gen4 (16 GT/s), causing:
+- Mouse lag and stuttering
+- Window movement jerkiness
+- General desktop sluggishness
+- ~12x reduction in PCIe bandwidth
+
+### Diagnosis
+
+```bash
+# Check current PCIe link speed
+cat /sys/bus/pci/devices/0000:01:00.0/current_link_speed
+# Should be "16.0 GT/s PCIe" for Gen4, NOT "2.5 GT/s PCIe"
+
+# Check max supported speed
+cat /sys/bus/pci/devices/0000:01:00.0/max_link_speed
+
+# Detailed PCIe link status (requires sudo)
+sudo lspci -vvv -s 01:00.0 | grep -iE "(lnksta|lnkcap)"
+# LnkSta should show "Speed 16GT/s" not "Speed 2.5GT/s (downgraded)"
+
+# Check kernel boot messages for PCIe warnings
+journalctl -b | grep -i "pcie.*limited"
+```
+
+### Root Cause
+
+This is a known issue with RTX 5090 + AMD X870 motherboards:
+- PCIe 5.0 signal integrity issues cause link training failures
+- The GPU falls back to Gen1 as a safe mode
+- Affects 15-25% of RTX 5090 installations
+
+### BIOS Settings (MSI MAG X870 TOMAHAWK WIFI)
+
+Verify these settings in BIOS:
+1. **PCIe Slot Speed**: Set to **Gen4** (not Auto or Gen5)
+2. **ASPM (Active State Power Management)**: **Disabled** for GPU slot
+3. **Above 4G Decoding**: **Enabled**
+4. **Re-Size BAR Support**: **Enabled**
+
+### Workarounds
+
+1. **Cold boot**: Full shutdown (not restart), wait 30 seconds, power on
+2. **BIOS update**: Check for latest MSI BIOS with AGESA updates
+3. **VBIOS update**: See VBIOS Update Procedure below
+
+---
+
+## VBIOS Update Procedure
+
+### Current VBIOS Information
+
+| Property | Value |
+|----------|-------|
+| GPU | Palit GeForce RTX 5090 GameRock |
+| Current VBIOS | 98.02.2E.40.61 |
+| Available VBIOS | 98.02.2E.80.10 (April 2025) |
+| Source | [TechPowerUp VBIOS Database](https://www.techpowerup.com/vgabios/?model=RTX+5090) |
+
+### Prerequisites
+
+- USB drive formatted as FAT32
+- NVFlash 5.867 or later ([download](https://www.techpowerup.com/download/nvidia-nvflash/))
+- Backup of current VBIOS
+- **Warning**: Your Ryzen 9800X3D has no integrated graphics - if flash fails, you have no display fallback
+
+### Step 1: Download Tools and VBIOS
+
+```bash
+# Create working directory
+mkdir -p ~/vbios-update && cd ~/vbios-update
+
+# Download NVFlash (get latest from TechPowerUp)
+# Extract to this directory
+```
+
+Download the VBIOS file (98.02.2E.80.10) from TechPowerUp for "Palit RTX 5090 GameRock"
+
+### Step 2: Backup Current VBIOS
+
+```bash
+cd ~/vbios-update
+
+# Backup current VBIOS (CRITICAL - do this first!)
+sudo ./nvflash --save backup-98.02.2E.40.61.rom
+
+# Verify backup was created
+ls -la backup*.rom
+```
+
+**Keep this backup safe** - you'll need it if the new VBIOS causes issues.
+
+### Step 3: Flash New VBIOS
+
+```bash
+# Flash the new VBIOS
+sudo ./nvflash new-vbios.rom
+
+# Follow prompts - type 'y' to confirm when asked
+# DO NOT interrupt the process or power off
+```
+
+### Step 4: Reboot and Verify
+
+```bash
+# Reboot system
+sudo reboot
+
+# After reboot, verify new VBIOS version
+nvidia-smi -q | grep "VBIOS"
+# Should show: 98.02.2E.80.10
+
+# Check PCIe link speed
+cat /sys/bus/pci/devices/0000:01:00.0/current_link_speed
+```
+
+### Rollback Procedure
+
+If the new VBIOS causes issues:
+
+```bash
+cd ~/vbios-update
+sudo ./nvflash backup-98.02.2E.40.61.rom
+sudo reboot
+```
+
+### References
+
+- [NVFlash Guide](https://www.techpowerup.com/download/nvidia-nvflash/)
+- [TechPowerUp VBIOS Database](https://www.techpowerup.com/vgabios/?model=RTX+5090)
+- [RTX 5090 PCIe Issues](https://www.ofzenandcomputing.com/rtx-5090-fe-pcie-5-0-compatibility-issues-reported-owners-find-workaround-force-pcie-4-0-mode/)
+
+---
+
 ## Changelog
 
+- **2025-12-06**: Added PCIe link speed degradation diagnosis and VBIOS update procedure
+- **2025-12-06**: Added shutdown script for dual-boot GPU state reset
 - **2025-12-06**: Initial fix implemented - clock limits + persistence mode

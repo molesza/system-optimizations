@@ -14,6 +14,25 @@ cd ~/system-optimizations/pop-os-docs && git pull --ff-only
 journalctl -b | grep -iE "(xid|error|fail)" | grep -ivE "firefox" | tail -20
 ```
 
+## Pending Verification (Next Session)
+
+**After reboot, verify RTX 5090 fixes are working:**
+
+```bash
+# 1. Check boot service applied clocks
+systemctl status nvidia-powerd-fix.service
+
+# 2. Verify persistence mode is enabled
+nvidia-smi -q | grep "Persistence Mode"
+
+# 3. Check for any Xid errors this boot
+journalctl -b | grep -i xid
+```
+
+If user tested Windows dual-boot, ask if Windows had any GPU issues on startup.
+
+**Remove this section once verified.**
+
 ## Purpose
 
 This repository contains system optimizations for Pop!_OS Linux. Scripts and configurations here modify system behavior for performance, power management, or user experience improvements.
@@ -52,7 +71,9 @@ system-optimizations/
 ├── rtx5090/            # RTX 5090 specific fixes
 │   ├── README.md       # Problem/solution documentation
 │   ├── nvidia-powerd-fix.service
-│   └── install-nvidia-fix.sh
+│   ├── install-nvidia-fix.sh
+│   └── scripts/
+│       └── nvidia-reset.shutdown  # Dual-boot GPU state reset
 └── <component>/        # Future component-specific folders
 ```
 
@@ -172,3 +193,8 @@ The system uses aggressive performance tuning:
 - Prefer drop-in configurations over modifying system defaults
 - Document the problem, root cause, and solution in each component's README.md
 - Reference external sources (forums, documentation) when applicable
+
+## Important Notes for Claude Code
+
+- **User must run sudo commands**: Claude Code cannot execute sudo commands directly. When system modifications are needed (copying files to /etc, /lib, enabling services, etc.), provide the commands for the user to run manually or ask them to approve the execution.
+- Most optimizations in this repo require root privileges to install.

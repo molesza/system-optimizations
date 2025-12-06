@@ -1,0 +1,15 @@
+[Unit]
+Description=NVIDIA RTX 5090 Stability Fix (Persistence Mode + Clock Limits)
+After=nvidia-persistenced.service
+Wants=nvidia-persistenced.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Enable persistence mode to prevent GPU state resets
+ExecStartPre=/usr/bin/nvidia-smi -pm 1
+# Limit GPU clocks to manufacturer spec (prevents Xid 13/69 errors)
+ExecStart=/usr/bin/nvidia-smi -lgc 180,2407
+
+[Install]
+WantedBy=multi-user.target

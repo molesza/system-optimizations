@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nvidia-smi)",
+      "Bash(lsb_release:*)",
+      "Bash(journalctl:*)",
+      "Bash(dmesg:*)",
+      "Bash(nvidia-settings:*)",
+      "WebSearch",
+      "Bash(nvidia-smi:*)",
+      "Bash(lscpu:*)",
+      "Bash(lspci:*)",
+      "Bash(lsblk:*)",
+      "Bash(dmidecode:*)",
+      "Bash(sensors:*)",
+      "Bash(nvme list:*)",
+      "Bash(systemctl:*)",
+      "Bash(systemd-analyze blame:*)",
+      "Bash(systemd-analyze:*)",
+      "Bash(lsusb:*)",
+      "Bash(ip link show:*)",
+      "Bash(rfkill list:*)",
+      "Bash(cat:*)",
+      "Bash(system76-power profile:*)",
+      "Bash(swapon:*)",
+      "Bash(lsmod:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

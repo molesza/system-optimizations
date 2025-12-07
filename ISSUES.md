@@ -165,3 +165,73 @@ Last updated: 2025-12-07
   - [TechPowerUp 9800X3D Review](https://www.techpowerup.com/review/amd-ryzen-7-9800x3d/26.html)
   - [SkatterBencher 9800X3D Overclocking](https://skatterbencher.com/2024/11/06/skatterbencher-82-ryzen-7-9800x3d-overclocked-to-5750-mhz/)
   - [MSI X3D Gaming Mode](https://www.msi.com/blog/msi-x3d-gaming-mode-enhance-gaming-performance-on-amd-ryzen-processors)
+
+### 10. RTX 5090 Undervolting and Power Optimization
+- **Status**: 🔍 To investigate
+- **Current state**:
+  - Idle power: ~62W (with 3x 4K 144Hz monitors)
+  - Power limit: 575W (stock)
+  - Clock limit: 2407 MHz (our stability fix)
+  - Coolbits: Not configured
+- **Expected idle power**: 45-50W with dual 4K monitors, 5-6W headless
+- **Current idle slightly high**: 62W may be normal for 3x 4K 144Hz, but could potentially be reduced
+
+#### Undervolting Benefits
+- **Reduced power consumption**: 70-170W less under load (16% savings)
+- **Lower temperatures**: Significant temp reduction
+- **Maintain performance**: 99% of stock performance possible
+- **Quieter operation**: Lower temps = lower fan speeds
+
+#### Undervolting Methods on Linux
+
+**Method 1: LACT (Recommended)**
+- GUI tool for NVIDIA/AMD GPU control
+- Supports voltage curve, power limit, fan control
+- Install: Available in some distro repos or from GitHub
+- May require suspend/resume trick for settings to apply cleanly:
+  ```bash
+  echo suspend | sudo tee /proc/driver/nvidia/suspend
+  echo resume | sudo tee /proc/driver/nvidia/suspend
+  ```
+
+**Method 2: nvidia-settings + Coolbits**
+- Enable Coolbits for overclocking controls:
+  ```bash
+  sudo nvidia-xconfig --cool-bits=28
+  ```
+- Coolbits 28 enables: overclocking (8) + overvoltage (16) + fan control (4)
+- Then use nvidia-settings to set clock offsets
+- Undervolting via "overclocking": increase clock offset while keeping power limit = same performance, less power
+
+**Method 3: Power Limit Only (Simplest)**
+- Just reduce power limit without touching voltage:
+  ```bash
+  sudo nvidia-smi -pl 500  # Reduce from 575W to 500W
+  ```
+- GPU will downclock when hitting limit but maintains stability
+- Good starting point before full undervolting
+
+#### Reported Working Settings for RTX 5090
+| Setting | Value | Notes |
+|---------|-------|-------|
+| Voltage | 0.875-0.9V | Down from ~1.0V stock |
+| Core clock | 2600-2900 MHz | With undervolt |
+| VRAM offset | +2200 MHz | Memory overclock |
+| Power limit | 450-500W | Down from 575W |
+
+#### Compatibility Notes
+- **Our clock limit (2407 MHz)**: Already limiting max clocks for stability
+- **Undervolting interaction**: Should be compatible - we're limiting clocks, undervolt reduces voltage at those clocks
+- **Testing required**: Need to verify stability with both clock limit and undervolt
+
+#### Idle Power Optimization
+- Multiple 4K monitors at high refresh rate increase idle power
+- Lowering refresh rate when not gaming can reduce idle power
+- Some users report idle power issues that require driver updates
+
+#### References
+- [Level1Techs: GPU Idle Power & Undervolt on Linux](https://forum.level1techs.com/t/some-gpu-5090-4090-3090-a600-idle-power-consumption-headless-on-linux-fedora-42-and-some-undervolt-overclock-info/237064)
+- [NVIDIA Open GPU Modules: Undervolting Discussion](https://github.com/NVIDIA/open-gpu-kernel-modules/discussions/236)
+- [ArchWiki: NVIDIA Tips and Tricks](https://wiki.archlinux.org/title/NVIDIA/Tips_and_tricks)
+- [ASUS ROG: Undervolting RTX 5090](https://rog-forum.asus.com/t5/push-the-limits/power-meets-precision-undervolting-your-rog-astral-oc-rtx-5090/ba-p/1093066)
+- [HardForum: RTX 5090 Undervolting](https://hardforum.com/threads/rtx-5090-undervolting-uv.2043276/)

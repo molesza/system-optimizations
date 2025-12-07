@@ -27,6 +27,7 @@ Disable all sleep states and configure system for maximum performance:
 |------|-------------|---------|
 | `disable-sleep.conf` | `/etc/systemd/sleep.conf.d/` | Disables all sleep states |
 | `90-disable-usb4-wake.rules` | `/etc/udev/rules.d/` | Disables wake from USB4 controller |
+| `system76-performance.service` | `/etc/systemd/system/` | Sets Performance profile at boot |
 
 ## Installation
 
@@ -39,8 +40,10 @@ sudo cp disable-sleep.conf /etc/systemd/sleep.conf.d/
 sudo cp 90-disable-usb4-wake.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
 
-# Set System76 to Performance mode
-sudo system76-power profile performance
+# Set System76 Performance profile to persist across reboots
+sudo cp system76-performance.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now system76-performance.service
 
 # Configure screen blank (5 min) without suspend
 gsettings set org.gnome.desktop.session idle-delay 300

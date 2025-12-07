@@ -1,0 +1,18 @@
+# Set System76 Power to Performance profile at boot
+# Install to: /etc/systemd/system/system76-performance.service
+#
+# System76-power resets to Balanced on every boot by design.
+# This service overrides that for desktop systems where we always want Performance.
+
+[Unit]
+Description=Set System76 Power Profile to Performance
+After=system76-power.service
+Wants=system76-power.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/system76-power profile performance
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

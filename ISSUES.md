@@ -128,3 +128,40 @@ Last updated: 2025-12-07
 3. **I/O scheduler** - Check if NVMe drives using optimal scheduler
 4. **GPU fan curve** - Custom fan curve for quieter operation
 5. **Gamemode integration** - Auto-apply optimizations when gaming
+
+---
+
+## Potential Optimizations to Investigate
+
+### 9. AMD Ryzen 9800X3D PBO Tuning
+- **Status**: 🔍 Optional investigation
+- **Current BIOS settings**:
+  - PBO: Disabled
+  - Gaming Mode: Disabled
+- **Current performance**: CPU hitting 5.25 GHz (above rated 5.2 GHz boost) - working well
+- **Why current settings are OK**:
+  - Unlike other Ryzen 9000 CPUs, 9800X3D isn't power-limited at stock
+  - PBO provides less benefit on this chip than others
+  - Gaming Mode only useful for dual-CCD chips (9950X3D), not single-CCD 9800X3D
+- **Potential gains with PBO**:
+  - Could reach 5.3-5.4 GHz with proper tuning
+  - Estimated 3-5% improvement in some workloads
+- **Recommended PBO settings if enabling**:
+  ```
+  PBO: Enabled (or Advanced)
+  Boost Override: +200 MHz
+  Curve Optimizer: All Core, Negative, -20 (conservative start)
+  Scalar: x10
+  ```
+- **Stability testing required**:
+  - y-cruncher for AVX stability
+  - Prime95 small FFTs for thermal testing
+  - Game testing for real-world stability
+- **Warnings**:
+  - Some ASRock boards shipped with aggressive voltage settings - check voltage stays under 1.35V
+  - Not all chips can handle -30 curve; start at -20
+  - Requires adequate cooling (240mm AIO recommended for PBO)
+- **References**:
+  - [TechPowerUp 9800X3D Review](https://www.techpowerup.com/review/amd-ryzen-7-9800x3d/26.html)
+  - [SkatterBencher 9800X3D Overclocking](https://skatterbencher.com/2024/11/06/skatterbencher-82-ryzen-7-9800x3d-overclocked-to-5750-mhz/)
+  - [MSI X3D Gaming Mode](https://www.msi.com/blog/msi-x3d-gaming-mode-enhance-gaming-performance-on-amd-ryzen-processors)

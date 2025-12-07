@@ -4,15 +4,66 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Session Startup Tasks
 
-**On each new session, run these commands to ensure documentation is current:**
+**On each new session, run these checks to verify system health:**
 
 ```bash
-# Update Pop!_OS official docs
-cd ~/system-optimizations/pop-os-docs && git pull --ff-only
+# 1. Check GPU is healthy (PCIe Gen 4, clock limit applied, no Xid errors)
+nvidia-smi -q | grep -A2 "PCIe Generation"
+# Expected: Max: 4, Current: 1-4 (1 at idle is OK, should be 4 under load)
 
-# Check for any new system issues since last session
-journalctl -b | grep -iE "(xid|error|fail)" | grep -ivE "firefox" | tail -20
+nvidia-smi --query-gpu=clocks.max.graphics --format=csv,noheader
+# Expected: 2407 MHz (NOT 3090 MHz)
+
+journalctl -b | grep -iE "xid" | tail -5
+# Expected: No recent Xid errors
+
+# 2. Check power profile is Performance
+system76-power profile
+# Expected: Performance
+
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+# Expected: performance
+
+# 3. Check for any failed services
+systemctl --failed
+
+# 4. Update Pop!_OS official docs
+cd ~/system-optimizations/pop-os-docs && git pull --ff-only
 ```
+
+### Quick Health Check (one-liner)
+
+```bash
+echo "=== GPU ===" && nvidia-smi --query-gpu=clocks.max.graphics,pcie.link.gen.current --format=csv && echo "=== CPU ===" && system76-power profile && cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor && echo "=== Errors ===" && journalctl -b | grep -iE "xid" | tail -3
+```
+
+### Troubleshooting
+
+If **clock limit shows 3090 MHz** instead of 2407 MHz:
+```bash
+sudo nvidia-smi -lgc 180,2407
+```
+
+If **PCIe shows Gen 1 at Max** (should be Gen 4):
+- System needs a full reboot - PCIe link is corrupted
+- This happens if system accidentally suspended (should be disabled now)
+
+If **CPU governor is powersave**:
+```bash
+sudo system76-power profile performance
+```
+
+## Pending Verification (Remove after confirmed)
+
+**After next reboot, verify these settings persisted:**
+
+- [ ] Sleep/hibernate disabled: `systemctl status sleep.target` shows inactive
+- [ ] USB4 wake disabled: `cat /sys/bus/pci/devices/0000:71:00.0/power/wakeup` shows "disabled"
+- [ ] PCIe Gen 4: `nvidia-smi -q | grep -A2 "PCIe Generation"` shows Max: 4
+- [ ] Clock limit: `nvidia-smi --query-gpu=clocks.max.graphics --format=csv,noheader` shows 2407 MHz
+- [ ] Performance profile: `system76-power profile` shows Performance
+
+**Once verified, remove this "Pending Verification" section from CLAUDE.md.**
 
 ## Purpose
 
@@ -55,6 +106,10 @@ system-optimizations/
 │   ├── install-nvidia-fix.sh
 │   └── scripts/
 │       └── nvidia-reset.shutdown  # Dual-boot GPU state reset
+├── power-management/   # Sleep disable and performance settings
+│   ├── README.md       # Problem/solution documentation
+│   ├── disable-sleep.conf          # Disables suspend/hibernate
+│   └── 90-disable-usb4-wake.rules  # Disables USB4 wake events
 └── <component>/        # Future component-specific folders
 ```
 
@@ -93,6 +148,8 @@ Each hardware component or subsystem gets its own folder containing:
 | Component | Issue | Fix | Status |
 |-----------|-------|-----|--------|
 | RTX 5090 | Xid 13/69 errors, driver resets | Clock limit (2407 MHz) + persistence mode | ✅ Fixed |
+| Power Management | Sleep breaks GPU (PCIe Gen 1, clock reset) | Disable suspend/hibernate, USB4 wake | ✅ Fixed |
+| CPU/System | Powersave governor on desktop | System76 Performance profile | ✅ Fixed |
 
 See `ISSUES.md` for pending issues and optimization opportunities.
 
@@ -163,7 +220,9 @@ The system uses aggressive performance tuning:
 
 ### Power Management
 - **CPU Driver**: amd-pstate-epp (active mode)
-- **System76 Power**: Balanced/Performance/Battery profiles available
+- **System76 Power**: Set to **Performance** profile (CPU governor: performance)
+- **Sleep/Hibernate**: **Disabled** - RTX 5090 doesn't recover properly from suspend
+- **Screen blank**: 5 minutes (no suspend, just blank)
 - **ZRAM**: 31GB compressed swap configured
 
 ## Safety Guidelines

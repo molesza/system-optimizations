@@ -1,6 +1,6 @@
 # Known Issues and Potential Optimizations
 
-Last updated: 2025-12-06
+Last updated: 2025-12-07
 
 ## Active Issues
 
@@ -11,6 +11,25 @@ Last updated: 2025-12-06
 - **Cause**: Driver allowing clocks up to 3090 MHz, exceeding stable silicon limits
 - **Solution**: Clock limit to 2407 MHz + persistence mode
 - **Install**: `./rtx5090/install-nvidia-fix.sh`
+
+### 2. Sleep/Suspend Breaks GPU (FIXED)
+- **Status**: ✅ Fixed
+- **Folder**: `power-management/`
+- **Problem**: After suspend/resume, GPU is in broken state:
+  - PCIe link drops from Gen 4 to Gen 1 (2.5 GT/s instead of 16 GT/s)
+  - GPU clock limits are reset (3090 MHz instead of 2407 MHz)
+  - Xid 32 errors occur due to corrupted GPU state
+  - Only a full reboot restores proper functionality
+- **Additional issue**: ASMedia ASM4242 USB4/Thunderbolt controller triggers spurious wake events
+- **Cause**: RTX 5090 Linux driver doesn't properly reinitialize PCIe link after S3 suspend
+- **Solution**: Disable all sleep states, disable USB4 wake, use screen blank only
+- **Install**: See `power-management/README.md`
+
+### 3. CPU Governor Powersave (FIXED)
+- **Status**: ✅ Fixed
+- **Problem**: System was using `powersave` governor despite having `idle=poll` in kernel params
+- **Solution**: Set System76 Power profile to Performance
+- **Command**: `sudo system76-power profile performance`
 
 ---
 
@@ -46,15 +65,9 @@ Last updated: 2025-12-06
   - Lower polling rate temporarily to test
   - Install openrazer for better driver support
 
-### 4. CPU Governor Set to Powersave
-- **Status**: ⚠️ Suboptimal for desktop
-- **Current**: `scaling_governor=powersave` with `balance_performance` EPP
-- **Issue**: With `idle=poll` in kernel params, powersave governor is contradictory
-- **Impact**: May cause micro-stutters when CPU needs to ramp up
-- **Potential fixes**:
-  - Set governor to `performance` for desktop use
-  - Or use System76 Power "Performance" profile
-  - Consider removing `idle=poll` if not needed for specific workload
+### 4. CPU Governor Set to Powersave (FIXED)
+- **Status**: ✅ Fixed (see Issue #3)
+- **Solution**: System76 Power profile set to Performance
 
 ### 5. NetworkManager-wait-online.service Failed
 - **Status**: ⚠️ Minor
@@ -102,9 +115,9 @@ Last updated: 2025-12-06
 **Note**: `idle=poll` is aggressive - CPU cores never sleep. This is typically used for ultra-low-latency workloads (audio production, real-time systems). For gaming, `idle=nomwait` or removing it entirely may be more appropriate.
 
 ### System76 Power Profile
-- **Current**: Balanced
+- **Current**: Performance
 - **Available**: Battery, Balanced, Performance
-- **Recommendation**: Use "Performance" for gaming/productivity, "Balanced" for general use
+- **Note**: Set to Performance permanently for this desktop system
 
 ---
 

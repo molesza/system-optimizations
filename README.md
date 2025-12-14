@@ -29,6 +29,26 @@ Fixes Xid 13/69 errors caused by the driver allowing GPU clocks beyond stable li
 
 See [rtx5090/README.md](rtx5090/README.md) for full details.
 
+### Power Management (Disable Sleep + Performance Profile)
+
+Applies desktop-oriented power settings to avoid suspend/resume GPU breakage and keep System76 power profile at Performance.
+
+```bash
+sudo ./power-management/install-power-management.sh
+```
+
+See [power-management/README.md](power-management/README.md) for details and rollback.
+
+### Audio (ALC4080 / MSI X870 Tomahawk)
+
+Fixes PipeWire/WirePlumber sink flapping by ensuring `alsa-ucm-conf` matches `0db0:cd0e`, and persists the change across package updates.
+
+```bash
+sudo ./audio/install-alc4080-ucm-fix.sh --divert
+```
+
+See [audio/README.md](audio/README.md) and [audio-investigation.md](audio-investigation.md).
+
 ## Documentation
 
 | File | Description |
@@ -36,6 +56,7 @@ See [rtx5090/README.md](rtx5090/README.md) for full details.
 | [HARDWARE.md](HARDWARE.md) | Complete hardware inventory |
 | [ISSUES.md](ISSUES.md) | Known issues and potential optimizations |
 | [CLAUDE.md](CLAUDE.md) | Guidance for Claude Code AI assistant |
+| [REINSTALL.md](REINSTALL.md) | Reapply fixes after reinstall |
 
 ## Reference
 

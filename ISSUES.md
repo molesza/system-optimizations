@@ -1,6 +1,6 @@
 # Known Issues and Potential Optimizations
 
-Last updated: 2025-12-07
+Last updated: 2025-12-14
 
 ## Active Issues
 
@@ -30,6 +30,55 @@ Last updated: 2025-12-07
 - **Problem**: System was using `powersave` governor despite having `idle=poll` in kernel params
 - **Solution**: Set System76 Power profile to Performance
 - **Command**: `sudo system76-power profile performance`
+
+### 4. Audio Sink Flapping / GNOME Volume Errors (FIXED)
+- **Status**: ✅ Fixed
+- **Folder**: `audio/`
+- **Problem**: PipeWire/WirePlumber repeatedly recreated the onboard USB audio device, causing GNOME volume UI assertion failures and audio/video instability
+- **Investigation date**: 2025-12-14
+
+#### Investigation Findings
+
+1. **NVIDIA HDMI audio was previously blacklisted incorrectly**:
+   - `/etc/modprobe.d/blacklist-nvidia-hdmi.conf` contained `blacklist snd_hda_intel`
+   - This disabled ALL HDA audio, including what was thought to be onboard Realtek
+   - Fixed by replacing with targeted HDMI codec block: `install snd_hda_codec_hdmi /bin/true`
+
+2. **X870 TOMAHAWK uses USB-based audio (ALC4080), not HD Audio**:
+   - The AMD HD Audio Controller (73:00.6) shows "no codecs found" - this is expected
+   - The motherboard routes audio through USB: `0db0:cd0e` (Realtek ALC4080)
+   - This is MSI's "Audio Boost 5" design for better audio isolation
+
+3. **Fifine USB microphone registers as keyboard**:
+   - Device `0c76:161e` (JMTek USB PnP Audio) has HID interface for volume knob
+   - May send spurious volume control events
+   - Can be disabled via X11 InputClass if problematic:
+     ```
+     Section "InputClass"
+         Identifier "Ignore JMTek USB PnP Audio HID"
+         MatchProduct "USB PnP Audio Device"
+         Option "Ignore" "on"
+     EndSection
+     ```
+
+4. **RTL8127A firmware warning resolved**:
+   - `update-initramfs` warned about missing `rtl8127a-1.fw`
+   - Downloaded from upstream linux-firmware to `/lib/firmware/rtl_nic/`
+   - Note: RTL8127A is 10GbE chip (not present), warning was spurious
+
+#### Configuration Files
+- `/etc/modprobe.d/blacklist-nvidia-hdmi.conf` - Blocks NVIDIA HDMI audio codec
+- `/etc/modprobe.d/alsa-realtek-fix.conf` - Can be removed (probe_mask not needed)
+
+#### Fix Applied
+
+- Add MSI X870 Tomahawk USB ID (`0db0:cd0e`) to the `alsa-ucm-conf` `If.realtek-alc4080` match and persist it with `dpkg-divert`.
+- **Install**: `sudo ./audio/install-alc4080-ucm-fix.sh --divert`
+- **Rollback**: `sudo ./audio/uninstall-alc4080-ucm-fix.sh`
+
+#### References
+- [ALC4080 support issue - GitHub](https://github.com/alsa-project/alsa-ucm-conf/issues/455)
+- [MSI X870 TOMAHAWK specs - KitGuru](https://www.kitguru.net/components/motherboard/leo-waldock/msi-mag-x870-tomahawk-review/)
 
 ---
 
@@ -64,10 +113,6 @@ Last updated: 2025-12-07
   - Check if using USB 2.0 or 3.0 port
   - Lower polling rate temporarily to test
   - Install openrazer for better driver support
-
-### 4. CPU Governor Set to Powersave (FIXED)
-- **Status**: ✅ Fixed (see Issue #3)
-- **Solution**: System76 Power profile set to Performance
 
 ### 5. NetworkManager-wait-online.service Failed
 - **Status**: ⚠️ Minor

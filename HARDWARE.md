@@ -1,6 +1,6 @@
 # System Hardware Inventory
 
-Last updated: 2025-12-06
+Last updated: 2025-12-14
 
 ## System Overview
 
@@ -73,12 +73,28 @@ Last updated: 2025-12-06
 - **Interface**: hci0
 - **Status**: Active, not blocked
 
+## Audio
+
+The X870 TOMAHAWK uses a **USB-based audio solution**, not traditional HD Audio.
+
+| Device | Codec | Type | Usage |
+|--------|-------|------|-------|
+| **Onboard Audio** | Realtek ALC4080 | USB Audio (0db0:cd0e) | Main audio output (rear jacks) |
+| **Fifine Microphone** | JMTek USB PnP | USB Audio (0c76:161e) | USB microphone input |
+| **Webcam Mic** | Logitech C920 | USB Audio | Webcam built-in mic |
+
+### Audio Notes
+
+- **ALC4080 is USB-based**: Unlike older boards with HD Audio codecs, the X870 TOMAHAWK routes its audio jacks through a USB audio controller for better quality/isolation
+- **AMD HD Audio Controller shows "no codecs found"**: This is expected - the motherboard doesn't use the traditional HD Audio path
+- **NVIDIA HDMI audio**: Disabled via `/etc/modprobe.d/blacklist-nvidia-hdmi.conf` to prevent conflicts
+- **Fifine mic HID interface**: The USB microphone registers as a keyboard (for volume knob) which may send spurious volume events
+
 ## Peripherals
 
 - **Mouse**: Razer Cobra
 - **Keyboard**: USB Keyboard (China Resource Semico)
 - **Webcam**: Logitech HD Pro Webcam C920
-- **Audio**: MSI USB Audio, JMTek USB Audio
 - **Other**: MSI Mystic Light RGB controller
 
 ## Kernel Boot Parameters

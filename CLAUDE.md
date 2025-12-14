@@ -27,7 +27,14 @@ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 # 3. Check for any failed services
 systemctl --failed
 
-# 4. Update Pop!_OS official docs
+# 4. Check onboard audio UCM match is present (ALC4080 / 0db0:cd0e)
+grep -n "cd0e" /usr/share/alsa/ucm2/USB-Audio/USB-Audio.conf
+# Expected: line containing cd0e in If.realtek-alc4080 match
+
+# Optional: quick sink stability spot-check (IDs should not constantly change)
+for i in {1..5}; do pactl list sinks short | grep -i usb | awk '{print $1,$2}'; sleep 1; done
+
+# 5. Update Pop!_OS official docs
 cd ~/system-optimizations/pop-os-docs && git pull --ff-only
 ```
 
@@ -52,18 +59,6 @@ If **CPU governor is powersave**:
 ```bash
 sudo system76-power profile performance
 ```
-
-## Pending Verification (Remove after confirmed)
-
-**After next reboot, verify these settings persisted:**
-
-- [ ] Sleep/hibernate disabled: `systemctl status sleep.target` shows inactive
-- [ ] USB4 wake disabled: `cat /sys/bus/pci/devices/0000:71:00.0/power/wakeup` shows "disabled"
-- [ ] PCIe Gen 4: `nvidia-smi -q | grep -A2 "PCIe Generation"` shows Max: 4
-- [ ] Clock limit: `nvidia-smi --query-gpu=clocks.max.graphics --format=csv,noheader` shows 2407 MHz
-- [ ] Performance profile: `system76-power profile` shows Performance
-
-**Once verified, remove this "Pending Verification" section from CLAUDE.md.**
 
 ## Purpose
 

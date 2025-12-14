@@ -31,6 +31,14 @@ Disable all sleep states and configure system for maximum performance:
 
 ## Installation
 
+### Quick install (recommended)
+
+```bash
+sudo ./install-power-management.sh
+```
+
+### Manual install
+
 ```bash
 # Disable suspend/hibernate
 sudo mkdir -p /etc/systemd/sleep.conf.d
@@ -71,6 +79,14 @@ cat /sys/bus/pci/devices/0000:71:00.0/power/wakeup
 ```
 
 ## Rollback
+
+### Quick rollback
+
+```bash
+sudo ./uninstall-power-management.sh
+```
+
+### Manual rollback
 
 To re-enable sleep/hibernate:
 
